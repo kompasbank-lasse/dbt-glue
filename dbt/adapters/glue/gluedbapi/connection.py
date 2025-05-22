@@ -212,8 +212,15 @@ class GlueConnection:
     ) -> None:
         """Deletes any existing session with session_id and creates a new one."""
         logger.debug("GlueConnection _recreate_session called")
-        self.delete_session(session_id=session_id)
-        logger.debug(f'Deleted session with id {session_id}')
+        
+        try:
+            self.delete_session(session_id=session_id)
+            logger.debug(f'Deleted session with id {session_id}')
+        except self.client.exceptions.AccessDeniedException as e:
+            # Session either doesn't exist or doesn't have required tags
+            # With tag-based permissions, this means we can proceed to try and create a new session
+            logger.debug(f"AccessDeniedException when trying to delete session {session_id}. "
+                        f"Session likely doesn't exist or lacks required tags. Proceeding with creation.")
 
         self._create_session(session_id=session_id)
 
